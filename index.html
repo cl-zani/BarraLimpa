@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Fiscal Cidadão</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+            background: #e8ecf1;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2e7d32;
+            font-size: 28px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #2e7d32;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .tag-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .tag-btn {
+            padding: 10px 18px;
+            border: 2px solid #2e7d32;
+            border-radius: 25px;
+            background: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: #2e7d32;
+        }
+
+        .tag-btn.selected {
+            background: #2e7d32;
+            color: white;
+            border-color: #2e7d32;
+        }
+        
+        .tag-btn:active {
+            transform: scale(0.95);
+        }
+
+        .camera-btn {
+            width: 100%;
+            padding: 15px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .camera-btn:active {
+            background: #0b7dda;
+            transform: scale(0.98);
+        }
+
+        .photo-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .photo-preview img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 12px;
+            border: 2px solid #ddd;
+        }
+
+        .remove-photo {
+            margin-top: 8px;
+            padding: 8px 16px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .location-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+
+        .location-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .location-dot {
+            width: 12px;
+            height: 12px;
+            background: #4caf50;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+
+        .refresh-location {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            transform: translateY(100px);
+            transition: transform 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #2e7d32;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ Fiscal Cidadão</h1>
+            <p>Registre problemas ou elogios na sua cidade</p>
+        </div>
+
+        <div class="form-group">
+            <label>📝 Seu relato * (máx. 254 caracteres)</label>
+            <textarea id="relato" placeholder="Ex: Rua das Flores, 123 - Acúmulo de lixo há 3 dias..." maxlength="254"></textarea>
+            <div class="char-count"><span id="charCount">0</span> / 254 caracteres</div>
+        </div>
+
+        <div class="form-group">
+            <label>🏷️ Categoria (clique para selecionar)</label>
+            <div class="tag-buttons" id="tagButtons">
+                <button type="button" class="tag-btn" data-tag="lixo">🗑️ Lixo</button>
+                <button type="button" class="tag-btn" data-tag="construcao">🏗️ Construção</button>
+                <button type="button" class="tag-btn" data-tag="esgoto">💧 Esgoto</button>
+                <button type="button" class="tag-btn" data-tag="iluminacao">💡 Iluminação</button>
+                <button type="button" class="tag-btn" data-tag="positivo">👍 Elogio</button>
+                <button type="button" class="tag-btn" data-tag="outro">📌 Outro</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>📸 Foto (opcional)</label>
+            <button class="camera-btn" id="cameraBtn">📷 Tirar Foto ou Escolher da Galeria</button>
+            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+            <div class="photo-preview" id="photoPreview" style="display: none;">
+                <img id="previewImg" src="">
+                <br>
+                <button class="remove-photo" id="removePhotoBtn">✖️ Remover foto</button>
+            </div>
+        </div>
+
+        <div class="location-box">
+            <div class="location-status">
+                <div class="location-dot"></div>
+                <div>
+                    <strong>📍 Localização</strong><br>
+                    <span id="locationText">Obtendo localização...</span>
+                </div>
+            </div>
+            <button class="refresh-location" id="refreshLocationBtn">🔄 Atualizar localização</button>
+        </div>
+
+        <button class="submit-btn" id="submitBtn">🚀 Enviar Relato</button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // ⚠️ COLOQUE AQUI SUAS CHAVES DO SUPABASE ⚠️
+        const MINHA_URL = 'https://bvxdnnipqnrodkepnmri.supabase.co';  // SUBSTITUA
+        const MINHA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2eGRubmlwcW5yb2RrZXBubXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODkxMDcsImV4cCI6MjA5NjE2NTEwN30.uZA0RLnaXRi68UFTAgY4KC83xow9ylr4nAOP9nsQAVY';              // SUBSTITUA
+        
+        // Criar cliente Supabase com nomes DIFERENTES para não conflitar
+        const supabaseClient = window.supabase.createClient(MINHA_URL, MINHA_KEY);
+        
+        // ========== ELEMENTOS ==========
+        const relatoText = document.getElementById('relato');
+        const charCountSpan = document.getElementById('charCount');
+        const tagButtons = document.querySelectorAll('.tag-btn');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const fileInput = document.getElementById('fileInput');
+        const photoPreview = document.getElementById('photoPreview');
+        const previewImg = document.getElementById('previewImg');
+        const removePhotoBtn = document.getElementById('removePhotoBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const locationText = document.getElementById('locationText');
+        const refreshLocationBtn = document.getElementById('refreshLocationBtn');
+        const toast = document.getElementById('toast');
+        const loading = document.getElementById('loading');
+        
+        // ========== VARIÁVEIS ==========
+        let fotoSelecionada = null;
+        let localizacaoAtual = null;
+        let tagsSelecionadas = [];
+        
+        function showToast(mensagem, tipo = 'sucesso') {
+            toast.textContent = mensagem;
+            toast.style.background = tipo === 'erro' ? '#f44336' : '#4caf50';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        function showLoading() { loading.classList.add('show'); }
+        function hideLoading() { loading.classList.remove('show'); }
+        
+        // Contador de caracteres
+        relatoText.addEventListener('input', function() {
+            let count = this.value.length;
+            charCountSpan.textContent = count;
+        });
+        
+        // CATEGORIAS
+        console.log('✅ Botões de categoria encontrados:', tagButtons.length);
+        
+        tagButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const tag = this.dataset.tag;
+                console.log('🔘 Clicou na categoria:', tag);
+                
+                if (this.classList.contains('selected')) {
+                    this.classList.remove('selected');
+                    tagsSelecionadas = tagsSelecionadas.filter(t => t !== tag);
+                    showToast(`❌ Categoria "${tag}" removida`);
+                } else {
+                    this.classList.add('selected');
+                    tagsSelecionadas.push(tag);
+                    showToast(`✅ Categoria "${tag}" selecionada!`);
+                }
+            });
+        });
+        
+        // CÂMERA
+        cameraBtn.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showToast('Por favor, selecione uma imagem!', 'erro');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('A imagem deve ter no máximo 5MB!', 'erro');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                fotoSelecionada = e.target.result;
+                previewImg.src = fotoSelecionada;
+                photoPreview.style.display = 'block';
+                showToast('📸 Foto carregada!');
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        removePhotoBtn.addEventListener('click', function() {
+            fotoSelecionada = null;
+            photoPreview.style.display = 'none';
+            previewImg.src = '';
+            fileInput.value = '';
+            showToast('Foto removida');
+        });
+        
+        // LOCALIZAÇÃO
+        function obterLocalizacao() {
+            locationText.textContent = 'Obtendo localização...';
+            
+            if (!navigator.geolocation) {
+                locationText.textContent = '❌ Geolocalização não suportada';
+                showToast('Seu navegador não suporta GPS', 'erro');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    localizacaoAtual = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    locationText.innerHTML = `✅ ${localizacaoAtual.lat.toFixed(6)}, ${localizacaoAtual.lng.toFixed(6)}`;
+                    showToast(`📍 Localização obtida!`);
+                    console.log('Localização:', localizacaoAtual);
+                },
+                function(error) {
+                    console.error('Erro GPS:', error);
+                    let mensagem = '❌ Erro ao obter localização';
+                    if (error.code === 1) mensagem = '❌ Permissão negada! Autorize a localização.';
+                    locationText.textContent = mensagem;
+                    showToast(mensagem, 'erro');
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+        
+        refreshLocationBtn.addEventListener('click', () => obterLocalizacao());
+        
+        // UPLOAD FOTO
+        async function uploadFoto(base64Data) {
+            if (!base64Data) return null;
+            
+            try {
+                const blob = await fetch(base64Data).then(r => r.blob());
+                const fileName = `foto_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                
+                const { data, error } = await supabaseClient.storage
+                    .from('fotos')
+                    .upload(fileName, blob);
+                
+                if (error) throw error;
+                
+                const { data: { publicUrl } } = supabaseClient.storage
+                    .from('fotos')
+                    .getPublicUrl(fileName);
+                
+                return publicUrl;
+            } catch (error) {
+                console.error('Erro upload:', error);
+                return null;
+            }
+        }
+        
+        // ENVIAR RELATO
+        submitBtn.addEventListener('click', async function() {
+            const texto = relatoText.value.trim();
+            
+            if (!texto) {
+                showToast('✏️ Escreva seu relato primeiro!', 'erro');
+                return;
+            }
+            
+            if (!localizacaoAtual) {
+                showToast('📍 Aguardando localização...', 'erro');
+                obterLocalizacao();
+                return;
+            }
+            
+            showLoading();
+            submitBtn.disabled = true;
+            
+            try {
+                let fotoUrl = null;
+                if (fotoSelecionada) {
+                    fotoUrl = await uploadFoto(fotoSelecionada);
+                }
+                
+                const ocorrencia = {
+                    texto: texto,
+                    foto: fotoUrl,
+                    latitude: localizacaoAtual.lat,
+                    longitude: localizacaoAtual.lng,
+                    tags: tagsSelecionadas,
+                    dispositivo: navigator.userAgent.substring(0, 200),
+                    status: 'pendente'
+                };
+                
+                const { error } = await supabaseClient
+                    .from('ocorrencias')
+                    .insert([ocorrencia]);
+                
+                if (error) throw error;
+                
+                showToast('✅ Relato enviado com sucesso!');
+                
+                // Limpar
+                relatoText.value = '';
+                charCountSpan.textContent = '0';
+                fotoSelecionada = null;
+                photoPreview.style.display = 'none';
+                previewImg.src = '';
+                tagsSelecionadas = [];
+                tagButtons.forEach(btn => btn.classList.remove('selected'));
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('❌ Erro: ' + error.message, 'erro');
+            } finally {
+                hideLoading();
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // Inicializar
+        console.log('🚀 App Fiscal Cidadão - Versão FINAL');
+        obterLocalizacao();
+    </script>
+</body>
+</html>

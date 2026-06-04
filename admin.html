@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Fiscal Cidadão</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* TELA DE LOGIN */
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-container h2 {
+            color: #2e7d32;
+            margin-bottom: 20px;
+        }
+
+        .login-container input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .login-container input:focus {
+            outline: none;
+            border-color: #2e7d32;
+        }
+
+        .login-container button {
+            width: 100%;
+            padding: 12px;
+            background: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-container button:hover {
+            background: #1b5e20;
+        }
+
+        .erro-senha {
+            color: #f44336;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        /* PAINEL ADMIN (só aparece depois do login) */
+        .admin-panel {
+            display: none;
+            width: 100%;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .btn-sair {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .stat-card.pendente .stat-number { color: #f44336; }
+        .stat-card.andamento .stat-number { color: #ff9800; }
+        .stat-card.resolvido .stat-number { color: #4caf50; }
+
+        .filters {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filters input, .filters select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .filters button {
+            padding: 8px 16px;
+            background: #2e7d32;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .ocorrencias-lista {
+            background: white;
+            border-radius: 12px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-pendente { background: #ffebee; color: #c62828; }
+        .status-andamento { background: #fff3e0; color: #ef6c00; }
+        .status-resolvido { background: #e8f5e9; color: #2e7d32; }
+
+        .status-select {
+            padding: 5px 10px;
+            border-radius: 20px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-acao {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .btn-editar { background: #2196f3; color: white; }
+        .btn-excluir { background: #f44336; color: white; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 15px;
+        }
+
+        .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-family: inherit;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        .foto-miniatura {
+            max-width: 50px;
+            max-height: 50px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            transform: translateX(400px);
+            transition: transform 0.3s;
+            z-index: 1001;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2e7d32;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 12px;
+                padding: 8px;
+            }
+            .stat-number {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- TELA DE LOGIN -->
+    <div id="loginScreen" class="login-container">
+        <h2>🔐 Painel Administrativo</h2>
+        <p>Digite a senha para acessar</p>
+        <input type="password" id="senhaInput" placeholder="Digite a senha" autocomplete="off">
+        <button onclick="verificarSenha()">Entrar</button>
+        <div id="erroSenha" class="erro-senha"></div>
+    </div>
+
+    <!-- PAINEL ADMIN (só aparece após login) -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="container">
+            <div class="header">
+                <h1>🏛️ Painel Administrativo - Fiscal Cidadão</h1>
+                <div>
+                    <a href="index.html" style="color: white; margin-right: 15px;">📝 Novo Relato</a>
+                    <a href="mapa.html" style="color: white; margin-right: 15px;">🗺️ Ver Mapa</a>
+                    <button class="btn-sair" onclick="logout()">🚪 Sair</button>
+                </div>
+            </div>
+
+            <div class="stats-bar" id="statsBar">
+                <div class="stat-card pendente">
+                    <div class="stat-number" id="totalPendente">0</div>
+                    <div class="stat-label">🟡 Pendentes</div>
+                </div>
+                <div class="stat-card andamento">
+                    <div class="stat-number" id="totalAndamento">0</div>
+                    <div class="stat-label">🟠 Em Andamento</div>
+                </div>
+                <div class="stat-card resolvido">
+                    <div class="stat-number" id="totalResolvido">0</div>
+                    <div class="stat-label">🟢 Resolvidos</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalGeral">0</div>
+                    <div class="stat-label">📊 Total</div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="🔍 Buscar por texto..." style="flex: 1;">
+                <select id="statusFilter">
+                    <option value="todos">Todos os status</option>
+                    <option value="pendente">🟡 Pendente</option>
+                    <option value="em_andamento">🟠 Em andamento</option>
+                    <option value="resolvido">🟢 Resolvido</option>
+                </select>
+                <button id="refreshBtn">🔄 Atualizar</button>
+                <button id="exportBtn">📎 Exportar CSV</button>
+            </div>
+
+            <div class="ocorrencias-lista">
+                <table id="tabelaOcorrencias">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Data</th>
+                            <th>Relato</th>
+                            <th>Categorias</th>
+                            <th>Localização</th>
+                            <th>Foto</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyOcorrencias">
+                        <tr>
+                            <td colspan="8" style="text-align: center;">Carregando...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h3>✏️ Editar Ocorrência</h3>
+            <label>Texto do relato:</label>
+            <textarea id="editTexto" rows="4"></textarea>
+            <label>Status:</label>
+            <select id="editStatus" style="width: 100%; padding: 8px; margin: 10px 0;">
+                <option value="pendente">🟡 Pendente</option>
+                <option value="em_andamento">🟠 Em andamento</option>
+                <option value="resolvido">🟢 Resolvido</option>
+            </select>
+            <div class="modal-buttons">
+                <button onclick="fecharModal()" style="padding: 8px 16px; background: #999; color: white; border: none; border-radius: 6px;">Cancelar</button>
+                <button onclick="salvarEdicao()" style="padding: 8px 16px; background: #2e7d32; color: white; border: none; border-radius: 6px;">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">✅ Operação realizada</div>
+    <div class="loading" id="loading"><div class="spinner"></div></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÕES
+        // ==========================================
+        
+        // ⚠️ COLOQUE AQUI SUAS CHAVES DO SUPABASE ⚠️
+        const URL_SUPABASE = 'https://bvxdnnipqnrodkepnmri.supabase.co';
+        const KEY_SUPABASE = 'SeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2eGRubmlwcW5yb2RrZXBubXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODkxMDcsImV4cCI6MjA5NjE2NTEwN30.uZA0RLnaXRi68UFTAgY4KC83xow9ylr4nAOP9nsQAVY';
+        
+        // 🔐 DEFINA SUA SENHA AQUI (mude para a senha que você quiser)
+        const SENHA_ADMIN = 'admin123';  // ⚠️ MUDE ESTA SENHA!
+        
+        // ==========================================
+        // CÓDIGO DO PAINEL (não precisa mexer)
+        // ==========================================
+        
+        const supabaseCliente = window.supabase.createClient(URL_SUPABASE, KEY_SUPABASE);
+        
+        let ocorrenciasAtuais = [];
+        let editandoId = null;
+        
+        // VERIFICAR SENHA
+        function verificarSenha() {
+            const senha = document.getElementById('senhaInput').value;
+            const erroDiv = document.getElementById('erroSenha');
+            
+            if (senha === SENHA_ADMIN) {
+                // Salvar login na sessão
+                sessionStorage.setItem('admin_logado', 'true');
+                mostrarPainel();
+            } else {
+                erroDiv.textContent = '❌ Senha incorreta! Tente novamente.';
+                document.getElementById('senhaInput').value = '';
+            }
+        }
+        
+        function mostrarPainel() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            carregarOcorrencias();
+        }
+        
+        function logout() {
+            sessionStorage.removeItem('admin_logado');
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('senhaInput').value = '';
+            document.getElementById('erroSenha').textContent = '';
+        }
+        
+        // Verificar se já está logado ao carregar a página
+        function verificarLogin() {
+            if (sessionStorage.getItem('admin_logado') === 'true') {
+                mostrarPainel();
+            } else {
+                document.getElementById('loginScreen').style.display = 'flex';
+                document.getElementById('adminPanel').style.display = 'none';
+            }
+        }
+        
+        function showToast(mensagem, tipo = 'sucesso') {
+            const toast = document.getElementById('toast');
+            toast.textContent = mensagem;
+            toast.style.background = tipo === 'erro' ? '#f44336' : '#2e7d32';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        async function carregarOcorrencias() {
+            showLoading();
+            
+            const status = document.getElementById('statusFilter').value;
+            const busca = document.getElementById('searchInput').value.toLowerCase();
+            
+            try {
+                let query = supabaseCliente.from('ocorrencias').select('*').order('data_criacao', { ascending: false });
+                
+                if (status !== 'todos') {
+                    query = query.eq('status', status);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) throw error;
+                
+                let filtrados = data;
+                if (busca) {
+                    filtrados = data.filter(o => o.texto.toLowerCase().includes(busca));
+                }
+                
+                ocorrenciasAtuais = filtrados;
+                atualizarTabela();
+                atualizarStats(data);
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao carregar: ' + error.message, 'erro');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function atualizarStats(dados) {
+            const pendente = dados.filter(o => o.status === 'pendente').length;
+            const andamento = dados.filter(o => o.status === 'em_andamento').length;
+            const resolvido = dados.filter(o => o.status === 'resolvido').length;
+            
+            document.getElementById('totalPendente').textContent = pendente;
+            document.getElementById('totalAndamento').textContent = andamento;
+            document.getElementById('totalResolvido').textContent = resolvido;
+            document.getElementById('totalGeral').textContent = dados.length;
+        }
+        
+        function atualizarTabela() {
+            const tbody = document.getElementById('tbodyOcorrencias');
+            
+            if (ocorrenciasAtuais.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Nenhuma ocorrência encontrada</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = ocorrenciasAtuais.map(oc => `
+                <tr>
+                    <td>${oc.id}</td>
+                    <td>${new Date(oc.data_criacao).toLocaleString('pt-BR')}</td>
+                    <td style="max-width: 300px; word-wrap: break-word;">${oc.texto.substring(0, 100)}${oc.texto.length > 100 ? '...' : ''}</td>
+                    <td>${oc.tags ? oc.tags.map(t => `<span class="status-badge" style="background:#e8f5e9;">${t}</span>`).join('') : '-'}</td>
+                    <td>${oc.latitude ? oc.latitude.toFixed(4) + ', ' + oc.longitude.toFixed(4) : '-'}</td>
+                    <td>${oc.foto ? `<img src="${oc.foto}" class="foto-miniatura" onclick="window.open('${oc.foto}')">` : '-'}</td>
+                    <td>
+                        <select class="status-select" onchange="mudarStatus(${oc.id}, this.value)">
+                            <option value="pendente" ${oc.status === 'pendente' ? 'selected' : ''}>🟡 Pendente</option>
+                            <option value="em_andamento" ${oc.status === 'em_andamento' ? 'selected' : ''}>🟠 Em andamento</option>
+                            <option value="resolvido" ${oc.status === 'resolvido' ? 'selected' : ''}>🟢 Resolvido</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn-acao btn-editar" onclick="abrirModalEditar(${oc.id})">✏️</button>
+                        <button class="btn-acao btn-excluir" onclick="excluirOcorrencia(${oc.id})">🗑️</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        async function mudarStatus(id, novoStatus) {
+            showLoading();
+            try {
+                const { error } = await supabaseCliente
+                    .from('ocorrencias')
+                    .update({ status: novoStatus })
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                showToast('Status atualizado!');
+                carregarOcorrencias();
+                
+            } catch (error) {
+                showToast('Erro: ' + error.message, 'erro');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function abrirModalEditar(id) {
+            const ocorrencia = ocorrenciasAtuais.find(o => o.id === id);
+            if (!ocorrencia) return;
+            
+            editandoId = id;
+            document.getElementById('editTexto').value = ocorrencia.texto;
+            document.getElementById('editStatus').value = ocorrencia.status;
+            document.getElementById('modal').style.display = 'flex';
+        }
+        
+        function fecharModal() {
+            document.getElementById('modal').style.display = 'none';
+            editandoId = null;
+        }
+        
+        async function salvarEdicao() {
+            const novoTexto = document.getElementById('editTexto').value.trim();
+            const novoStatus = document.getElementById('editStatus').value;
+            
+            if (!novoTexto) {
+                showToast('O texto não pode estar vazio', 'erro');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const { error } = await supabaseCliente
+                    .from('ocorrencias')
+                    .update({ texto: novoTexto, status: novoStatus })
+                    .eq('id', editandoId);
+                
+                if (error) throw error;
+                
+                showToast('Ocorrência atualizada!');
+                fecharModal();
+                carregarOcorrencias();
+                
+            } catch (error) {
+                showToast('Erro: ' + error.message, 'erro');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function excluirOcorrencia(id) {
+            if (!confirm('Tem certeza que deseja excluir esta ocorrência? Esta ação não pode ser desfeita.')) return;
+            
+            showLoading();
+            
+            try {
+                const { error } = await supabaseCliente
+                    .from('ocorrencias')
+                    .delete()
+                    .eq('id', id);
+                
+                if (error) throw error;
+                
+                showToast('Ocorrência excluída!');
+                carregarOcorrencias();
+                
+            } catch (error) {
+                showToast('Erro: ' + error.message, 'erro');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function exportarCSV() {
+            if (ocorrenciasAtuais.length === 0) {
+                showToast('Nenhum dado para exportar', 'erro');
+                return;
+            }
+            
+            const headers = ['ID', 'Data', 'Texto', 'Tags', 'Latitude', 'Longitude', 'Status', 'Dispositivo'];
+            const rows = ocorrenciasAtuais.map(o => [
+                o.id,
+                new Date(o.data_criacao).toLocaleString('pt-BR'),
+                `"${o.texto.replace(/"/g, '""')}"`,
+                o.tags ? o.tags.join(';') : '',
+                o.latitude || '',
+                o.longitude || '',
+                o.status,
+                o.dispositivo || ''
+            ]);
+            
+            const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `ocorrencias_${new Date().toISOString().slice(0, 19)}.csv`;
+            link.click();
+            
+            showToast('Exportado com sucesso!');
+        }
+        
+        // Eventos
+        document.getElementById('refreshBtn').addEventListener('click', carregarOcorrencias);
+        document.getElementById('statusFilter').addEventListener('change', carregarOcorrencias);
+        document.getElementById('searchInput').addEventListener('input', carregarOcorrencias);
+        document.getElementById('exportBtn').addEventListener('click', exportarCSV);
+        
+        // Permitir apertar Enter na senha
+        document.getElementById('senhaInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verificarSenha();
+            }
+        });
+        
+        // Fechar modal ao clicar fora
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) fecharModal();
+        });
+        
+        // Inicializar
+        verificarLogin();
+        console.log('✅ Painel administrativo com senha carregado!');
+    </script>
+</body>
+</html>
