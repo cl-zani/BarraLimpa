@@ -242,10 +242,10 @@
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #2e7d32;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2e7d32;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -313,12 +313,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // ⚠️ COLOQUE AQUI SUAS CHAVES DO SUPABASE ⚠️
-        const MINHA_URL = 'https://bvxdnnipqnrodkepnmri.supabase.co';  // SUBSTITUA
-        const MINHA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2eGRubmlwcW5yb2RrZXBubXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODkxMDcsImV4cCI6MjA5NjE2NTEwN30.uZA0RLnaXRi68UFTAgY4KC83xow9ylr4nAOP9nsQAVY';              // SUBSTITUA
+        // ========== SUAS CHAVES DO SUPABASE ==========
+        const URL_SUPABASE = 'https://bvxdnnipqnrodkepnmri.supabase.co';  // ⚠️ SUBSTITUA
+        const KEY_SUPABASE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2eGRubmlwcW5yb2RrZXBubXJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODkxMDcsImV4cCI6MjA5NjE2NTEwN30.uZA0RLnaXRi68UFTAgY4KC83xow9ylr4nAOP9nsQAVY';              // ⚠️ SUBSTITUA
         
-        // Criar cliente Supabase com nomes DIFERENTES para não conflitar
-        const supabaseClient = window.supabase.createClient(MINHA_URL, MINHA_KEY);
+        const supabaseCliente = window.supabase.createClient(URL_SUPABASE, KEY_SUPABASE);
         
         // ========== ELEMENTOS ==========
         const relatoText = document.getElementById('relato');
@@ -357,13 +356,10 @@
         });
         
         // CATEGORIAS
-        console.log('✅ Botões de categoria encontrados:', tagButtons.length);
-        
         tagButtons.forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const tag = this.dataset.tag;
-                console.log('🔘 Clicou na categoria:', tag);
                 
                 if (this.classList.contains('selected')) {
                     this.classList.remove('selected');
@@ -377,10 +373,36 @@
             });
         });
         
-        // CÂMERA
+        // ========== FUNÇÃO DE COMPRESSÃO DE IMAGEM ==========
+        async function comprimirImagem(base64Data, qualidade = 0.7, maxLargura = 1200) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    let largura = img.width;
+                    let altura = img.height;
+                    
+                    if (largura > maxLargura) {
+                        altura = (altura * maxLargura) / largura;
+                        largura = maxLargura;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = largura;
+                    canvas.height = altura;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, largura, altura);
+                    
+                    const imagemComprimida = canvas.toDataURL('image/jpeg', qualidade);
+                    resolve(imagemComprimida);
+                };
+                img.src = base64Data;
+            });
+        }
+        
+        // CÂMERA COM COMPRESSÃO
         cameraBtn.addEventListener('click', () => fileInput.click());
         
-        fileInput.addEventListener('change', function(event) {
+        fileInput.addEventListener('change', async function(event) {
             const file = event.target.files[0];
             if (!file) return;
             
@@ -389,19 +411,34 @@
                 return;
             }
             
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('A imagem deve ter no máximo 5MB!', 'erro');
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('A imagem deve ter no máximo 10MB!', 'erro');
                 return;
             }
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                fotoSelecionada = e.target.result;
-                previewImg.src = fotoSelecionada;
-                photoPreview.style.display = 'block';
-                showToast('📸 Foto carregada!');
-            };
-            reader.readAsDataURL(file);
+            showLoading();
+            showToast('📷 Comprimindo imagem...');
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const imagemComprimida = await comprimirImagem(e.target.result, 0.7, 1200);
+                    fotoSelecionada = imagemComprimida;
+                    previewImg.src = imagemComprimida;
+                    photoPreview.style.display = 'block';
+                    
+                    const tamanhoKB = Math.round(imagemComprimida.length * 0.75 / 1024);
+                    showToast(`📸 Foto carregada! (${tamanhoKB}KB)`);
+                    hideLoading();
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                console.error('Erro:', error);
+                showToast('Erro ao processar foto', 'erro');
+                hideLoading();
+            }
+            
+            fileInput.value = '';
         });
         
         removePhotoBtn.addEventListener('click', function() {
@@ -430,7 +467,6 @@
                     };
                     locationText.innerHTML = `✅ ${localizacaoAtual.lat.toFixed(6)}, ${localizacaoAtual.lng.toFixed(6)}`;
                     showToast(`📍 Localização obtida!`);
-                    console.log('Localização:', localizacaoAtual);
                 },
                 function(error) {
                     console.error('Erro GPS:', error);
@@ -445,7 +481,7 @@
         
         refreshLocationBtn.addEventListener('click', () => obterLocalizacao());
         
-        // UPLOAD FOTO
+        // UPLOAD FOTO COM COMPRESSÃO
         async function uploadFoto(base64Data) {
             if (!base64Data) return null;
             
@@ -453,13 +489,13 @@
                 const blob = await fetch(base64Data).then(r => r.blob());
                 const fileName = `foto_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
                 
-                const { data, error } = await supabaseClient.storage
+                const { data, error } = await supabaseCliente.storage
                     .from('fotos')
-                    .upload(fileName, blob);
+                    .upload(fileName, blob, { contentType: 'image/jpeg' });
                 
                 if (error) throw error;
                 
-                const { data: { publicUrl } } = supabaseClient.storage
+                const { data: { publicUrl } } = supabaseCliente.storage
                     .from('fotos')
                     .getPublicUrl(fileName);
                 
@@ -504,7 +540,7 @@
                     status: 'pendente'
                 };
                 
-                const { error } = await supabaseClient
+                const { error } = await supabaseCliente
                     .from('ocorrencias')
                     .insert([ocorrencia]);
                 
@@ -531,7 +567,7 @@
         });
         
         // Inicializar
-        console.log('🚀 App Fiscal Cidadão - Versão FINAL');
+        console.log('🚀 Fiscal Cidadão - Com compressão de imagens!');
         obterLocalizacao();
     </script>
 </body>
