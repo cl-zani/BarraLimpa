@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Ocorrências - Fiscal Cidadão</title>
+    <title>Mapa de Ocorrências - Barra Linda</title>
     <!-- CSS do Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
@@ -179,7 +179,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>🗺️ Mapa de Ocorrências - Fiscal Cidadão</h1>
+        <h1>🗺️ Mapa de Ocorrências - Barra Linda</h1>
         <div class="filters">
             <select id="statusFilter">
                 <option value="todos">Todos os status</option>
@@ -209,7 +209,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // Configuração do backend seguro
-        const API_URL = 'https://meu-backend-fiscal.vercel.app/api/ocorrencias';
+        const API_URL = 'https://meu-backend-barralinda.vercel.app/api/ocorrencias';
         
         let mapa;
         let marcadores = [];
