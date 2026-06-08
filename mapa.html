@@ -411,32 +411,52 @@
         }
         
         // Função para carregar ocorrências
-        async function carregarOcorrencias() {
-            console.log('Carregando ocorrências via backend seguro...');
-            
-            try {
-                const resposta = await fetch(API_URL);
-                
-                if (!resposta.ok) {
-                    throw new Error('Erro ao buscar dados');
-                }
-                
-                todasOcorrencias = await resposta.json();
-                console.log('Ocorrências encontradas:', todasOcorrencias.length);
-                
-                // Extrair categorias disponíveis
-                todasCategorias = extrairCategorias(todasOcorrencias);
-                atualizarCheckboxesDropdown();
-                console.log('Categorias disponíveis:', todasCategorias.length);
-                
-                // Aplicar filtros iniciais
-                aplicarFiltros();
-                
-            } catch (erro) {
-                console.error('Erro ao carregar:', erro);
-                document.getElementById('stats').innerHTML = '❌ Erro: ' + erro.message;
+async function carregarOcorrencias() {
+    console.log('Carregando ocorrências da API...');
+    document.getElementById('stats').innerHTML = '🔄 Carregando ocorrências...';
+    
+    try {
+        // URL correta do seu backend (já está funcionando)
+        const API_URL = 'https://meu-backend-fiscal.vercel.app/api/ocorrencias';
+        
+        // Faz a requisição com modo cors explícito
+        const resposta = await fetch(API_URL, {
+            method: 'GET',
+            mode: 'cors',  // Importante para CORS
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
             }
+        });
+        
+        if (!resposta.ok) {
+            throw new Error(`HTTP ${resposta.status}: ${resposta.statusText}`);
         }
+        
+        const dados = await resposta.json();
+        console.log('Dados recebidos:', dados);
+        
+        if (dados && dados.length > 0) {
+            todasOcorrencias = dados;
+            todasCategorias = extrairCategorias(todasOcorrencias);
+            atualizarCheckboxesDropdown();
+            aplicarFiltros();
+            document.getElementById('stats').innerHTML = `✅ ${todasOcorrencias.length} ocorrências carregadas`;
+        } else {
+            document.getElementById('stats').innerHTML = '📭 Nenhuma ocorrência encontrada';
+            todasOcorrencias = [];
+        }
+        
+    } catch (erro) {
+        console.error('Erro detalhado:', erro);
+        document.getElementById('stats').innerHTML = `❌ Erro: ${erro.message}`;
+        
+        // Mostra mais detalhes se for erro de CORS
+        if (erro.message.includes('fetch')) {
+            document.getElementById('stats').innerHTML += ' - Verifique se o servidor está online';
+        }
+    }
+}
         
         // Aguardar o DOM carregar
         document.addEventListener('DOMContentLoaded', () => {
