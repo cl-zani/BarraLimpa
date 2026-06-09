@@ -369,13 +369,13 @@
             <label>🏷️ Categorias (clique para selecionar)</label>
             <div class="tag-buttons" id="tagButtons">
                 <button type="button" class="tag-btn" data-tag="positivo">👍 Elogio</button>
-                <button type="button" class="tag-btn" data-tag="obra">🚧 Obra</button>
+                <button type="button" class="tag-btn" data-tag="obra">🚧 Obra pública</button>
                 <button type="button" class="tag-btn" data-tag="lixo">🗑️ Lixo irregular</button>
-                <button type="button" class="tag-btn" data-tag="rua">🏘️ Rua</button>
+                <button type="button" class="tag-btn" data-tag="rua">🛣️ Rua</button>
                 <button type="button" class="tag-btn" data-tag="iluminacao">💡 Iluminação pública</button>
                 <button type="button" class="tag-btn" data-tag="praia">🏖️ Praia</button>
                 <button type="button" class="tag-btn" data-tag="comercio">🛒 Comércio</button>
-                <button type="button" class="tag-btn" data-tag="mangue">🦀 Manguezal</button>
+                <button type="button" class="tag-btn" data-tag="construcao">🪏 Construção</button>
                 <button type="button" class="tag-btn" data-tag="outro">📌 Outro</button>
             </div>
         </div>
@@ -463,8 +463,7 @@
         function recusarLocalizacao() {
             gpsConsentido = false;
             document.getElementById('modalConsentimento').classList.add('hidden');
-            locationText.textContent = '❌ Localização não autorizada. O relato não será enviado sem localização.';
-            showToast('Sem localização não é possível enviar o relato.', 'erro');
+            locationText.textContent = '⚠️ Localização não autorizada. O relato será enviado sem localização.';
         }
 
         // ========== CONTADOR DE CARACTERES ==========
@@ -579,16 +578,17 @@
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
-                    locationText.innerHTML = `✅ Localização obtida com sucesso`;
+                    locationText.textContent = '✅ Localização obtida com sucesso';
                     showToast('📍 Localização obtida!');
                 },
                 function(error) {
-                    let mensagem = '❌ Erro ao obter localização';
-                    if (error.code === 1) mensagem = '❌ Permissão negada. Autorize a localização nas configurações.';
+                    // GPS falhou (comum em computadores) — permite envio mesmo assim
+                    localizacaoAtual = null;
+                    let mensagem = '⚠️ Localização não disponível. Você ainda pode enviar o relato.';
+                    if (error.code === 1) mensagem = '⚠️ Permissão de localização negada. Você ainda pode enviar o relato.';
                     locationText.textContent = mensagem;
-                    showToast(mensagem, 'erro');
                 },
-                { enableHighAccuracy: true, timeout: 10000 }
+                { enableHighAccuracy: false, timeout: 10000 }
             );
         }
 
@@ -609,26 +609,19 @@
                 return;
             }
 
-            if (!localizacaoAtual) {
-                showToast('📍 É necessário autorizar a localização para enviar.', 'erro');
-                document.getElementById('modalConsentimento').classList.remove('hidden');
-                return;
-            }
-
             showLoading();
             submitBtn.disabled = true;
 
             try {
-                // Monta o payload
                 const payload = {
                     texto: texto,
-                    latitude: localizacaoAtual.lat,
-                    longitude: localizacaoAtual.lng,
+                    latitude: localizacaoAtual ? localizacaoAtual.lat : null,
+                    longitude: localizacaoAtual ? localizacaoAtual.lng : null,
                     tags: tagsSelecionadas,
                     foto: fotoSelecionada || null
                 };
 
-                const resposta = await fetch(`${API_URL}/ocorrencias`, {
+                const resposta = await fetch(`${API_URL}/salvar-ocorrencia`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
